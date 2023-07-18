@@ -1,9 +1,12 @@
 name: Sync with Notepad++ Releases
 
+# on:
+#   schedule:
+#     - cron: '0 0 * * *'  # Runs once every day
 on:
-  schedule:
-    - cron: '0 0 * * *'  # Runs once every day
-
+  push:
+    paths:
+      - '.github/workflows/blank.yml'
 jobs:
   sync:
     runs-on: ubuntu-latest
