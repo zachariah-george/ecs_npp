@@ -29,11 +29,11 @@ jobs:
           | tr -d \" \
           | tr -d , \
           | tr -d ' ' > version.txt
-          echo "VERSION=$(cat version.txt)" >> $GITHUB_ENV
+          echo "VERSION=$(sed 's/v//g' version.txt)" >> $GITHUB_ENV
 
       - name: Download Notepad++ portable
         run: |
-          wget https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/${{ env.VERSION }}/npp.${{ env.VERSION }}.portable.x64.zip
+          wget https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v${{ env.VERSION }}/npp.${{ env.VERSION }}.portable.x64.zip
 
       - name: Create Release
         id: create_release
