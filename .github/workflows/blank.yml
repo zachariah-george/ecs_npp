@@ -7,6 +7,7 @@ on:
   push:
     paths:
       - '.github/workflows/blank.yml'
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -25,10 +26,10 @@ jobs:
 
       - name: Check Notepad++ releases
         run: |
-          current_version=$(curl -s https://api.github.com/repos/notepad-plus-plus/notepad-plus-plus/releases/latest | jq -r '.tag_name')
+          current_version=$(curl -s https://api.github.com/repos/notepad-plus-plus/notepad-plus-plus/releases/latest | jq -r '.tag_name' | sed 's/v//')
           if [[ -z "$(git tag -l $current_version)" ]]; then
             echo "Creating release for version $current_version"
-            wget -O npp.zip "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/$current_version/npp.$current_version.portable.x64.zip"
+            wget -O npp.zip "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v$current_version/npp.$current_version.portable.x64.zip"
             git tag $current_version
             git push --tags
             echo "::set-output name=release_tag::$current_version"
@@ -42,9 +43,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.check_release.outputs.release_tag }}
-          release_name: Release ${{ steps.check_release.outputs.release_tag }}
+          tag_name: ${{ steps.sync.outputs.release_tag }}
+          release_name: Release ${{ steps.sync.outputs.release_tag }}
           body: |
-            New release: ${{ steps.check_release.outputs.release_tag }}
+            New release: ${{ steps.sync.outputs.release_tag }}
           draft: false
           prerelease: false
