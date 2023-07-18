@@ -49,3 +49,11 @@ jobs:
             New release: ${{ steps.sync.outputs.release_tag }}
           draft: false
           prerelease: false
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "Your Name"
+          git config --global user.email "your-email@example.com"
+          git add .
+          git commit -m "Updated release to version ${{ steps.sync.outputs.release_tag }}"
+          git push
