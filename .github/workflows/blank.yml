@@ -8,51 +8,52 @@ on:
     paths:
       - '.github/workflows/blank.yml'
 
+
 jobs:
-  sync:
+  copy-release:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout ecs_notepad-plus-plus
         uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
         with:
-          python-version: 3.x
+          repository: 'zachariah-george/ecs_npp'
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install dependencies
-        run: pip install requests
-
-      - name: Check Notepad++ releases
+      - name: Get latest Notepad++ release
+        id: get-release
         run: |
-          current_version=$(curl -s https://api.github.com/repos/notepad-plus-plus/notepad-plus-plus/releases/latest | jq -r '.tag_name' | sed 's/v//')
-          if [[ -z "$(git tag -l $current_version)" ]]; then
-            echo "Creating release for version $current_version"
-            wget -O npp.zip "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v$current_version/npp.$current_version.portable.x64.zip"
-            git tag $current_version
-            git push --tags
-            echo "::set-output name=release_tag::$current_version"
-          else
-            echo "No new releases found"
-          fi
+          wget -qO- https://api.github.com/repos/notepad-plus-plus/notepad-plus-plus/releases/latest \
+          | grep "tag_name" \
+          | cut -d : -f2,3 \
+          | tr -d \" \
+          | tr -d , \
+          | tr -d ' ' > version.txt
+          echo "VERSION=$(cat version.txt)" >> $GITHUB_ENV
 
-      - name: Create release
+      - name: Download Notepad++ portable
+        run: |
+          wget https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/${{ env.VERSION }}/npp.${{ env.VERSION }}.portable.x64.zip
+
+      - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          release_name: Release ${{ steps.sync.outputs.release_tag }}
-          body: |
-            New release: ${{ steps.sync.outputs.release_tag }}
+          tag_name: ${{ env.VERSION }}
+          release_name: Release ${{ env.VERSION }}
           draft: false
           prerelease: false
 
-      - name: Commit and push changes
-        run: |
-          git config --global user.name "Your Name"
-          git config --global user.email "your-email@example.com"
-          git add .
-          git commit -m "Updated release to version ${{ steps.sync.outputs.release_tag }}"
-          git push
+      - name: Upload Release Asset
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./npp.${{ env.VERSION }}.portable.x64.zip
+          asset_name: npp.${{ env.VERSION }}.portable.x64.zip
+          asset_content_type: application/zip
+
